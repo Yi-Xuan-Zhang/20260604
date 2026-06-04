@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        /* 2.排版 */
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            background: #f5f7fa;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 600px;
+            margin: 50px auto;
+            background-color: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, .1);
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .input-area {
+            display: flex;
+            gap: 10px;
+        }
+
+        input {
+            flex: 1;
+            padding: 10px;
+            font-size: 16px;
+        }
+
+        button {
+            cursor: pointer;
+            padding: 10px 15px;
+            background-color: rgb(183, 231, 233);
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            background-color: #b9d0eb;
+        }
+
+        .filter-area {
+            margin-top: 15px;
+            display: flex;
+            gap: 10px;
+        }
+
+        #showList {
+            margin-top: 20px;
+            padding: 0;
+        }
+
+        .todo-item {
+            list-style: none;
+
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+
+            padding: 12px;
+            margin-bottom: 10px;
+
+            background: #f5f5f5;
+            border-radius: 8px;
+        }
+
+        .todo-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* 已完成刪除線 */
+        .completed {
+            text-decoration: line-through;
+            color: gray;
+        }
+
+        /* 分類樣式 */
+        .tag {
+            margin-left: 10px;
+            padding: 2px 8px;
+            border-radius: 20px;
+            font-size: 12px;
+            background: #ddd;
+        }
+
+        /* checkbox完成改成圓圈 */
+        .circle-btn {
+            appearance: none;
+            width: 24px;
+            height: 24px;
+            border: 2px solid #2564cf;
+            border-radius: 50%;
+            cursor: pointer;
+            position: relative;
+
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .circle-btn:checked {
+            background-color: #2564cf;
+        }
+
+        .circle-btn:checked::after {
+            content: "";
+            color: white;
+            position: absolute;
+            left: 5px;
+            top: 0px;
+            font-size: 14px;
+        }
+
+        .circle-btn.done {
+            background: #4aa3df;
+            color: white;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- 1.建立畫面 -->
+    <div class="container">
+        <h1>代辦事項 To Do List</h1>
+        <div class="input-area">
+            <input id="newobject" type="text" placeholder="新增任務">
+            <button id="onebtn" type="button">個人</button>
+            <button id="newbtn" type="button">新增</button>
+        </div>
+
+        <div class="filter-area ">
+            <button id="allbtn" type="button">全部</button>
+            <button id="nobtn" type="button">未完成</button>
+            <button id="yesbtn" type="button">已完成</button>
+            <button id="wkbtn" type="button">工作</button>
+            <button id="mybtn" type="button">個人</button>
+        </div>
+        <ul id="showList"></ul>
+    </div>
+    <!-- 3.互動 -->
+    <script>
+        // ====================
+        // 資料
+        // ====================
+        //初始化資料
+        let todos = JSON.parse(localStorage.getItem("todos") || "[]");
+
+        // 新增分類變數
+        let statusFilter = "all";      // all / active / completed
+        let categoryFilter = "all";    // all / work / personal
+        let currentCategory = "personal";
+        // ====================
+        // DOM
+        // ====================
+        const newobject = document.querySelector("#newobject");
+        const newbtn = document.querySelector("#newbtn");
+        const onebtn = document.querySelector("#onebtn");
+        const allbtn = document.querySelector("#allbtn");
+        const nobtn = document.querySelector("#nobtn");
+        const yesbtn = document.querySelector("#yesbtn");
+        const wkbtn = document.querySelector("#wkbtn");
+        const mybtn = document.querySelector("#mybtn");
+        const showList = document.querySelector("#showList");
+        // ====================
+        // 儲存資料
+        // ====================
+        function saveTodos() {
+            localStorage.setItem("todos", JSON.stringify(todos));
+        }
+        //統一更新流程
+        function update() {
+            saveTodos();
+            render();
+        }
+        // ====================
+        // 新增任務
+        // ====================
+        function addTodo() {
+            const text = newobject.value.trim();
+            if (!text) return alert("請輸入任務內容");
+            // 新增任務時記錄分類
+            const todo = {
+                id: Date.now(), text: text, done: false, category: currentCategory
+            };
+            todos.push(todo);
+            newobject.value = "";
+            update();
+        }
+
+        // ====================
+        // 刪除任務
+        // ====================
+        function deleteTodo(id) {
+            todos = todos.filter(t => t.id !== id);
+            update();
+        }
+        // ====================
+        // 完成任務
+        // ====================
+        function toggleTodo(id) {
+            todos = todos.map(t =>
+                t.id === id ? { ...t, done: !t.done } : t
+            );
+            update();
+        }
+        // ====================
+        // 篩選資料
+        // ====================
+        function getFilteredTodos() {
+            return todos.filter(todo => {
+
+                // 狀態篩選
+                const statusOK =
+                    statusFilter === "all" ||
+                    (statusFilter === "active" && !todo.done) ||
+                    (statusFilter === "completed" && todo.done);
+
+                const categoryOK =
+                    categoryFilter === "all" ||
+                    todo.category === categoryFilter;
+
+                return statusOK && categoryOK;
+            });
+        }
+        // ====================
+        // 畫面渲染
+        // ====================
+        function render() {
+            showList.innerHTML = "";
+            const data = getFilteredTodos();
+            console.log(todos);
+
+            data.forEach(todo => {
+                const li = document.createElement("li");
+                li.classList.add("todo-item");
+                li.innerHTML = `
+                <div class="todo-left">
+                    <span class="circle-btn ${todo.done ? "done" : ""}" data-id="${todo.id}">
+                        ${todo.done ? "✔" : ""}</span>
+                    <span class="${todo.done ? "completed" : ""}">${todo.text}</span>
+                    <span class="tag">${todo.category === "work" ? "工作" : "個人"}</span>
+                    </div>
+                    <button class="delete-btn"data-id="${todo.id}">刪除</button>
+        `;
+                showList.appendChild(li);
+            });
+
+            bindEvents();
+        }
+        // ====================
+        // 綁定事件
+        // ====================
+        function bindEvents() {
+            document.querySelectorAll(".circle-btn").forEach(btn => {
+                btn.addEventListener("click", function () {
+                    const id = Number(this.dataset.id);
+                    toggleTodo(id);
+                });
+            });
+            document.querySelectorAll(".delete-btn").forEach(btn => {
+                btn.addEventListener("click", function () {
+                    const id = Number(this.dataset.id);
+                    deleteTodo(id);
+                });
+            });
+        }
+        // ====================
+        // 按鈕事件
+        // ====================
+        newbtn.addEventListener("click", addTodo);
+        newobject.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") {
+                addTodo();
+            }
+        });
+        //狀態按鈕
+        allbtn.addEventListener("click", () => {
+            statusFilter = "all";
+            render();
+        });
+        nobtn.addEventListener("click", () => {
+            statusFilter = "active";
+            render();
+        });
+        yesbtn.addEventListener("click", () => {
+            statusFilter = "completed";
+            render();
+        });
+        onebtn.addEventListener("click", () => {
+            if (currentCategory === "personal") {
+                currentCategory = "work";
+                onebtn.textContent = "工作";
+            } else {
+                currentCategory = "personal";
+                onebtn.textContent = "個人";
+            }
+        });
+        //分類按鈕
+        wkbtn.addEventListener("click", () => {
+            categoryFilter = "work";
+            render();
+        });
+
+        mybtn.addEventListener("click", () => {
+            categoryFilter = "personal";
+            render();
+        });
+        // ====================
+        // 初始化
+        // ====================
+        render();
+
+    </script>
+</body>
+
+</html>
