@@ -48,11 +48,20 @@
             padding: 10px 15px;
             background-color: rgb(183, 231, 233);
             border-radius: 10px;
+
+            transition: all 0.3s;
         }
 
         button:hover {
             transform: translateY(-2px);
             background-color: #b9d0eb;
+        }
+
+        .active {
+            background: #2564cf;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 2px 8px rgba(37, 100, 207, .3);
         }
 
         .filter-area {
@@ -142,16 +151,17 @@
         <h1>📝代辦事項 To Do List</h1>
         <div class="input-area">
             <input id="newobject" type="text" placeholder="新增任務">
-            <button id="onebtn" type="button">個人</button>
+            <button id="onebtn" class="category-btn active" type="button" data-category="personal">個人</button>
+            <button id=" workBtn" class="category-btn" type="button" data-category="work">工作</button>
             <button id="newbtn" type="button">新增</button>
         </div>
 
         <div class="filter-area ">
-            <button id="allbtn" type="button">全部</button>
-            <button id="nobtn" type="button">未完成</button>
-            <button id="yesbtn" type="button">已完成</button>
-            <button id="wkbtn" type="button">工作</button>
-            <button id="mybtn" type="button">個人</button>
+            <button id="allbtn" class="status-btn" data-status="all" type="button">全部</button>
+            <button id="nobtn" class="status-btn" data-status="active" type="button">未完成</button>
+            <button id="yesbtn" class="status-btn" data-status="completed" type="button">已完成</button>
+            <button id="wkbtn" class="category-filter" data-category="work" type="button">工作</button>
+            <button id="mybtn" class="category-filter" data-category="personal" type="button">個人</button>
         </div>
         <ul id="showList"></ul>
     </div>
@@ -162,7 +172,6 @@
         // ====================
         //初始化資料
         let todos = JSON.parse(localStorage.getItem("todos") || "[]");
-
         // 新增分類變數
         let statusFilter = "all";      // all / active / completed
         let categoryFilter = "all";    // all / work / personal
@@ -173,12 +182,16 @@
         const newobject = document.querySelector("#newobject");
         const newbtn = document.querySelector("#newbtn");
         const onebtn = document.querySelector("#onebtn");
+        const workBtn = document.querySelector("#workBtn");
         const allbtn = document.querySelector("#allbtn");
         const nobtn = document.querySelector("#nobtn");
         const yesbtn = document.querySelector("#yesbtn");
         const wkbtn = document.querySelector("#wkbtn");
         const mybtn = document.querySelector("#mybtn");
         const showList = document.querySelector("#showList");
+        //先建立群組(陣列)
+        const statusButtons = [allbtn, nobtn, yesbtn];
+        const categoryButtons = [wkbtn, mybtn];
         // ====================
         // 儲存資料
         // ====================
@@ -204,7 +217,6 @@
             newobject.value = "";
             update();
         }
-
         // ====================
         // 刪除任務
         // ====================
@@ -226,17 +238,14 @@
         // ====================
         function getFilteredTodos() {
             return todos.filter(todo => {
-
                 // 狀態篩選
                 const statusOK =
                     statusFilter === "all" ||
                     (statusFilter === "active" && !todo.done) ||
                     (statusFilter === "completed" && todo.done);
-
                 const categoryOK =
                     categoryFilter === "all" ||
                     todo.category === categoryFilter;
-
                 return statusOK && categoryOK;
             });
         }
@@ -292,42 +301,51 @@
             }
         });
         //狀態按鈕
-        allbtn.addEventListener("click", () => {
-            statusFilter = "all";
-            render();
+        document.querySelectorAll(".status-btn").forEach(btn => {
+            btn.addEventListener("click", () => {
+                statusFilter = btn.dataset.status;
+                setActiveButton(btn, statusButtons);
+                // 顯示所有分類
+                if (statusFilter === "all") {
+                    categoryFilter = "all";
+                    // 分類按鈕取消選取
+                    categoryButtons.forEach(btn => {
+                        btn.classList.remove("active");
+                    });
+                }
+                render();
+            });
         });
-        nobtn.addEventListener("click", () => {
-            statusFilter = "active";
-            render();
-        });
-        yesbtn.addEventListener("click", () => {
-            statusFilter = "completed";
-            render();
-        });
-        onebtn.addEventListener("click", () => {
-            if (currentCategory === "personal") {
-                currentCategory = "work";
-                onebtn.textContent = "工作";
-            } else {
-                currentCategory = "personal";
-                onebtn.textContent = "個人";
-            }
+
+        //個人.工作選項切換
+        document.querySelectorAll(".category-btn").forEach(btn => {
+            btn.addEventListener("click", () => {
+                currentCategory = btn.dataset.category;
+                document.querySelectorAll(".category-btn")
+                    .forEach(b => b.classList.remove("active"));
+                btn.classList.add("active");
+            });
         });
         //分類按鈕
-        wkbtn.addEventListener("click", () => {
-            categoryFilter = "work";
-            render();
+        document.querySelectorAll(".category-filter").forEach(btn => {
+            btn.addEventListener("click", () => {
+                categoryFilter = btn.dataset.category
+                setActiveButton(btn, categoryButtons);
+                render();
+            });
         });
-
-        mybtn.addEventListener("click", () => {
-            categoryFilter = "personal";
-            render();
-        });
-        // ====================
-        // 初始化
-        // ====================
+        // 切換按鈕狀態
+        function setActiveButton(button, group) {
+            // 先把同群組按鈕的 active 移除
+            group.forEach(btn => {
+                btn.classList.remove("active");
+            });
+            // 再加到目前按鈕
+            button.classList.add("active");
+        }
+        //初始化
+        setActiveButton(allbtn, statusButtons);
         render();
-
     </script>
 </body>
 

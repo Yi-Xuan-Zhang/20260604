@@ -4,30 +4,112 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>寶可夢圖鑑</title>
     <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            background: linear-gradient(135deg, #eef2ff, #dbeafe);
+        }
+
         #cards {
             display: flex;
             gap: 8px;
             flex-wrap: wrap;
         }
 
-        .card {
-            width: calc(100px - 20px);
-            padding: 10px;
+        h1 {
             text-align: center;
-            background-color: aquamarine;
+            font-size: 3rem;
+            letter-spacing: 3px;
+            color: #ffcb05;
+            text-shadow:
+                3px 3px #2a75bb;
+        }
+
+        .search {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        #searchip {
+            width: 300px;
+            padding: 10px 15px;
+            border: 1px solid #ddd;
+            border-radius: 30px;
+            font-size: 16px;
+        }
+
+        .card {
+            width: 180px;
+            padding: 20px;
+            text-align: center;
+            background: linear-gradient(135deg, #fff, #f3f7ff);
+            border-radius: 16px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, .1);
+            transition: .3s;
         }
 
         .card img {
-            width: 100%;
-            height: 50px;
-            object-fit: cover;
+            width: 120px;
+            height: 120px;
+            object-fit: contain;
+
+            display: block;
+            margin: auto;
+        }
+
+        .card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, .15);
+        }
+
+        /* 屬性標籤 */
+        .type {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 20px;
+            color: white;
+            font-size: 12px;
+            margin: 2px;
+        }
+
+        #typebuttons {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 8px;
+            margin: 15px 0 25px;
+        }
+
+        #typebuttons button {
+            border: none;
+            padding: 8px 14px;
+            border-radius: 20px;
+            cursor: pointer;
+            background: #e2dede;
+        }
+
+        #typebuttons button:hover {
+            transform: scale(1.05);
+        }
+
+        #typebuttons button.active {
+            color: white;
+            background: #333;
         }
     </style>
 </head>
 
 <body>
+    <h1>[寶可夢圖鑑]</h1>
+    <div class="search">
+        <input id="searchip" type="text" placeholder="搜尋寶可夢名稱...">
+    </div>
+    <div id="typebuttons"></div>
     <section id="cards">
         <div class="card">
             <div>#000</div>
@@ -74,6 +156,8 @@
             //     types: ['213', '123'],
             // }
         ];
+        let searchText = "";
+        let selectedType = "all";
         // 1.抓取寶可夢清單
         async function getpokemon(total) {
             // ※async　只有下一層可以使用 await 如果是在包一層的裡面是無法使用
@@ -94,7 +178,7 @@
             for (const element of allUrl.results) {
                 await onePokemon(element.url); // 等這隻抓完，才會進入下一次迴圈
             }
-            
+
             console.log(pokemons);
             await showList();
         }
@@ -130,25 +214,69 @@
 
         // 2.把畫面與資料串起來 -> 包成方法(因為要等資料更新資後在把畫面呈現上去)
         function showList() {
-            console.log(pokemons);
             const cards = document.querySelector('#cards');
             cards.innerHTML = '';
-            pokemons.forEach((pokemon) => {
-                console.log(pokemon);
+
+            const filterData = pokemons.filter((pokemon) => {
+
+                const matchName =
+                    pokemon.name.toLowerCase()
+                        .includes(searchText);
+
+                const matchType =
+                    selectedType === "all" ||
+                    pokemon.types.includes(selectedType);
+
+                return matchName && matchType;
+            });
+
+            filterData.forEach((pokemon) => {
                 cards.innerHTML += `
-                    <div class="card">
-                        <div>${pokemon.id}</div>
-                        <img src="${pokemon.img}" alt="">
-                        <div>${pokemon.name}</div>
-                        <div>
-                            ${pokemon.types.map((item) => `<span>${item}</span>`).join('')}
-                        </div>
-                    </div>
-                `;
+            <div class="card">
+                <div>#${String(pokemon.id).padStart(3, '0')}</div>
+                <img src="${pokemon.img}" alt="">
+                <div>${pokemon.name}</div>
+                <div>
+                    ${pokemon.types.map(type =>
+                    `<span class="type">${type}</span>`
+                ).join('')}
+                </div>
+            </div>
+        `;
             });
         }
+        //監聽搜尋框
+        const searchip = document.querySelector("#searchip");
 
+        searchip.addEventListener("input", (e) => {
+            searchText = e.target.value.toLowerCase();
+            showList();
+        });
+        //產生屬性按鈕
+        const typeButtons = document.querySelector("#typebuttons");
 
+        function createTypeButtons() {
+            typebuttons.innerHTML = `
+        <button data-type="all" class="active">全部</button>
+        `;
+
+            Object.values(Types).forEach(type => {
+                typebuttons.innerHTML += `
+            <button data-type="${type.zh}">${type.zh}</button>
+            `;
+            });
+        }
+        //初始化內容
+        createTypeButtons();
+        //綁定事件
+        typeButtons.addEventListener("click", (e) => {
+            if (e.target.tagName !== "BUTTON") return;
+            document.querySelectorAll("#typebuttons button")
+                .forEach(btn => btn.classList.remove("active"));
+            e.target.classList.add("active");
+            selectedType = e.target.dataset.type;
+            showList();
+        });
         // fetch(`https://pokeapi.co/api/v2/pokemon?limit=2000&offset=0`)
         //     .then((res) => res.json())
         //     .then((data) => {
