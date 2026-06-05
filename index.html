@@ -258,18 +258,20 @@
             console.log(todos);
 
             data.forEach(todo => {
-                const li = document.createElement("li");
-                li.classList.add("todo-item");
-                li.innerHTML = `
-                <div class="todo-left">
-                    <span class="circle-btn ${todo.done ? "done" : ""}" data-id="${todo.id}">
+                // 建議是使用js新增元件/innerHTML 則一使用
+                // const li = document.createElement("li");
+                // li.classList.add("todo-item");
+                showList.innerHTML += `
+                    <li class="todo-item">
+                        <div class="todo-left">
+                            <span class="circle-btn ${todo.done ? "done" : ""}" data-id="${todo.id}">
                         ${todo.done ? "✔" : ""}</span>
-                    <span class="${todo.done ? "completed" : ""}">${todo.text}</span>
-                    <span class="tag">${todo.category === "work" ? "工作" : "個人"}</span>
+                        <span class="${todo.done ? "completed" : ""}">${todo.text}</span>
+                        <span class="tag">${todo.category === "work" ? "工作" : "個人"}</span>
                     </div>
                     <button class="delete-btn"data-id="${todo.id}">刪除</button>
         `;
-                showList.appendChild(li);
+                // showList.appendChild(li);
             });
 
             bindEvents();
@@ -327,6 +329,14 @@
             });
         });
         //分類按鈕
+        //分類按鈕
+        // 跑回圈的方式搭配data-*取得(categoryFilter)來綁定監聽事件
+        // array.forEach(element => {
+        //     element.addEventListener(
+        //         element.dataset.XXXX 
+        //         render();
+        //     )
+        // });
         document.querySelectorAll(".category-filter").forEach(btn => {
             btn.addEventListener("click", () => {
                 categoryFilter = btn.dataset.category
